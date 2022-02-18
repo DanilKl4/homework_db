@@ -15,10 +15,16 @@ FROM student
 GROUP BY surname;
 
 -- 4
-SELECT date_birth, COUNT(id)
+SELECT date_part('year', date_birth) as year, COUNT(id)
 FROM student
-GROUP BY date_birth
-HAVING date_birth IS NOT NULL;
+GROUP BY year
+HAVING date_part('year', date_birth) IS NOT NULL;
+
+-- или же так
+SELECT EXTRACT(year from date_birth) as year, COUNT(id)
+FROM student
+GROUP BY year 
+HAVING EXTRACT(year from date_birth) IS NOT NULL;
 
 -- 5
 SELECT n_group, AVG(score)
