@@ -183,26 +183,37 @@ $$;
 
 -- 12
 BEGIN;
-ALTER TABLE people ADD COLUMN family_ties VARCHAR(255);
+CREATE TABLE family_ties (
+	id SERIAL PRIMARY KEY,
+	human_id INTEGER NOT NULL REFERENCES people(id),
+	relation_id INTEGER NOT NULL REFERENCES people(id),
+	relationship_type VARCHAR(255)
+);
 COMMIT;
 END;
 
 -- 13
 CREATE OR REPLACE PROCEDURE get_people_by_bwi(IN new_name varchar, new_surname varchar, new_birth_date DATE, 
 											  new_growth real, new_weight real, new_eyes varchar, new_hair varchar,
-											  new_family_ties varchar)
+											  r_id integer, r_type varchar)
 LANGUAGE plpgsql
 AS $$
+DECLARE
+	pers_id int;
 BEGIN
 	INSERT INTO people (name, surname, birth_date, growth, weight, eyes, hair, family_ties)
-	VALUES (new_name, new_surname, new_birth_date, new_growth, new_weight, new_eyes, new_hair, new_family_ties);
+	VALUES (new_name, new_surname, new_birth_date, new_growth, new_weight, new_eyes, new_hair)
+	RETURNING people.id INTO pers_id;
+
+	INSERT INTO family_ties(human_id, relation_id, relationship_type)
+	VALUES (pers_id, r_id, r_type);
 	RAISE NOTICE 'Success insert at %', current_timestamp;
 END;
 $$;
 
 -- 14
 BEGIN;
-ALTER TABLE people ADD COLUMN update_at TIMESTAMP DEFAULT current_timestamp;
+ALTER TABLE people ADD COLUMN updated_at TIMESTAMP DEFAULT current_timestamp;
 COMMIT;
 END;
 
@@ -210,13 +221,10 @@ END;
 CREATE OR REPLACE PROCEDURE update_characters(new_id int, new_growth real, new_weight real)
 LANGUAGE plpgsql
 AS $$
-DECLARE
-	up timestamp;
 BEGIN
-	up := current_timestamp;
 	UPDATE people SET growth = new_growth,
 					  weight = new_weight,
-					  update_at = up
+					  update_at = now()
 					  WHERE id = new_id;
 	RAISE NOTICE 'Success update at %', up;
 END;
